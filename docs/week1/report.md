@@ -6,14 +6,14 @@
 
 | Mục | Nội dung |
 |---|---|
-| Trường / Khoa | **[ĐIỀN: tên trường]** / **[ĐIỀN: tên khoa]** |
+| Trường / Khoa | HCMC University of Technology and Education / Faculty of Informational Education |
 | Môn học | Cấu trúc dữ liệu và Giải thuật (Data Structures & Algorithms) |
-| Đề tài (Appendix A) | **[ĐIỀN: số đề tài]** |
-| Chương lý thuyết liên quan | **[ĐIỀN: chương được phân công]** |
-| Sinh viên | Đinh Mai Tuyết Nhi – MSSV 25110049 **[kiểm tra lại]** |
-| Giảng viên hướng dẫn | **[ĐIỀN]** |
-| Kho mã nguồn | **[ĐIỀN: link GitHub]** |
-| Ngôn ngữ cài đặt | **[ĐIỀN: C++ / Python / Java]** |
+| Đề tài (Appendix A) | B-Tree for Disk-Oriented Search |
+| Chương lý thuyết liên quan | Lesson 8 & 9 |
+| Sinh viên | Đinh Mai Tuyết Nhi – MSSV 25110049  |
+| Giảng viên hướng dẫn | Huỳnh Xuân Phụng |
+| Kho mã nguồn | https://github.com/dinhmaituyetnhi220207-cmyk/dsa_B-TREE |
+| Ngôn ngữ cài đặt | C++ (C++17) |
 | Thời gian | 4 tuần. Báo cáo này thuộc **Tuần 1 – Hiểu đề và lập kế hoạch** |
 
 ## 2. Phát biểu bài toán theo cách hiểu của nhóm
@@ -179,7 +179,7 @@ Chèn lần lượt **20, 40, 10, 30, 15, 35, 45, 50** vào B-Tree bậc 5 rỗn
 
 **Nhận xét:** chỉ có hai lần tách (bước 5 và 8), xảy ra khi một nút vượt quá m − 1 = 4 khóa. Cây chỉ cao thêm khi gốc bị tách và khi đó mọi lá cùng xuống một tầng, nên các lá luôn cùng độ sâu: đây là lý do B-Tree luôn cân bằng với mọi thứ tự chèn.
 
-> **[CHÈN ẢNH: ảnh chụp bản chạy tay trên giấy của sinh viên cho 8 bước ở Bảng 7]**
+![Hình 3. Bản chạy tay trên giấy](images/fig3_handrun_photo.jpg)
 
 *Hình 3. Bản chạy tay trên giấy (sinh viên tự vẽ).*
 
@@ -229,8 +229,8 @@ Theo quy định của môn học, mọi lần sử dụng công cụ AI đều 
 
 | # | Ngày | Công cụ | Nội dung yêu cầu | Sử dụng vào | Kiểm chứng / nhận xét |
 |:---:|---|---|---|---|---|
-| 1 |  |  ChatGPT / Gemini | “B tree là gì, cấu trúc và hoạt động của nó như thế nào” | Tham khảo định nghĩa, tính chất (Mục 3.1) | Đối chiếu với CLRS [1] và Knuth [2]. [ĐIỀN: nhận xét của bạn] |
-| 2 |  |  | “What is application of B-tree” | Bản nháp đầu (mục Ứng dụng) | Bản nháp đầu chép gần nguyên văn câu trả lời; bản này đã bỏ và chỉ viết lại ngắn gọn ý chính ở Mục 2.1 |
+| 1 | 5/10/2026 | Gemini 3.6 | “B tree là gì, cấu trúc và hoạt động của nó như thế nào” | Tham khảo định nghĩa, tính chất (Mục 3.1) | Đối chiếu với CLRS [1] và Knuth [2]. Nội dung xúc tích và dễ hiểu hơn |
+| 2 | 8/10/2026 | Gemini 3.6 | “What is application of B-tree” | Bản nháp đầu (mục Ứng dụng) | Bản nháp đầu chép gần nguyên văn câu trả lời; bản này đã bỏ và chỉ viết lại ngắn gọn ý chính ở Mục 2.1 |
 
 
 **Bài học rút ra trong Tuần 1:**
@@ -243,4 +243,4 @@ Theo quy định của môn học, mọi lần sử dụng công cụ AI đều 
 1. T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, *Introduction to Algorithms*, 3rd ed., MIT Press, 2009, Chapter 18: B-Trees.
 2. D. E. Knuth, *The Art of Computer Programming, Vol. 3: Sorting and Searching*, 2nd ed., Addison-Wesley, 1998, §6.2.4.
 3. R. Bayer, E. McCreight, “Organization and Maintenance of Large Ordered Indexes,” *Acta Informatica*, vol. 1, no. 3, pp. 173–189, 1972.
-4. GeeksforGeeks, “Introduction of B-Tree,” https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/ (truy cập [ĐIỀN: ngày]).
+4. GeeksforGeeks, “Introduction of B-Tree,” https://www.geeksforgeeks.org/dsa/introduction-of-b-tree-2/ (truy cập ngày 5/10/2026).
