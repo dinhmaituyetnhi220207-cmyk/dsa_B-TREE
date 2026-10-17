@@ -1,194 +1,251 @@
+// btree.cpp - cai dat B-Tree bac m (Tuan 2).
 #include "btree.h"
-#include <stdexcept>
 #include <algorithm>
+#include <stdexcept>
 
 BTree::BTree(int order) : m_(order) {
     if (order < 3) throw std::invalid_argument("B-Tree order must be >= 3");
-    root_ = nullptr;
 }
 
-BTree::~BTree() { 
-    destroy(root_); 
-}
+BTree::~BTree() { destroy(root_); }
 
 void BTree::destroy(Node* node) {
     if (!node) return;
-    for (Node* child : node->children) {
-        destroy(child);
-    }
+    for (Node* child : node->children) destroy(child);
     delete node;
 }
 
-// 1. HAM TIM KIEM (SEARCH)
+// Vi tri i dau tien co keys[i] >= key (tim nhi phan trong mot nut).
+std::size_t BTree::lowerIndex(const Node* n, int key) {
+    return static_cast<std::size_t>(std::lower_bound(n->keys.begin(), n->keys.end(), key) - n->keys.begin());
+}
+
+// ---------------------------------------------------------------- SEARCH
 bool BTree::search(int key, std::vector<std::vector<int>>* path) const {
-    Node* current = root_;
-    while (current != nullptr) {
-        // Ghi lai cac khoa cua nut hien tai vao path (mo phong Disk Read / Trace)
-        if (path) {
-            path->push_back(current->keys);
-        }
-
-        // Tim vi tri khoa dau tien lớn hon hoac bang key
-        auto it = std::lower_bound(current->keys.begin(), current->keys.end(), key);
-        int idx = std::distance(current->keys.begin(), it);
-
-        // Neu tim thay key trong nut hien tai
-        if (idx < current->keys.size() && current->keys[idx] == key) {
-            return true;
-        }
-
-        // Neu la nut la thi khong con duong de di
-        if (current->isLeaf()) {
-            break;
-        }
-
-        // Chuyen xuong nut con tuong ung
-        current = current->children[idx];
+    const Node* cur = root_;
+    while (cur) {
+        ++visited_;                                   // moi nut tham = 1 lan doc dia
+        if (path) path->push_back(cur->keys);
+        std::size_t i = lowerIndex(cur, key);
+        if (i < cur->keys.size() && cur->keys[i] == key) return true;
+        if (cur->isLeaf()) return false;
+        cur = cur->children[i];
     }
     return false;
 }
 
-// Hàm hỗ trợ tách nút con khi tràn (Node Splitting)
-void BTree::splitChild(Node* parent, int i, Node* fullChild) {
-    // Tạo nút mới lưu m-1/2 khóa của fullChild
-    Node* newNode = new Node(fullChild->isLeaf());
-    int medianIdx = (m_ - 1) / 2;
-
-    // Chuyển nửa sau khóa của fullChild sang newNode
-    newNode->keys.assign(fullChild->keys.begin() + medianIdx + 1, fullChild->keys.end());
-
-    // Nếu không phải lá, chuyển nửa sau nút con sang newNode
-    if (!fullChild->isLeaf()) {
-        newNode->children.assign(fullChild->children.begin() + medianIdx + 1, fullChild->children.end());
-        fullChild->children.erase(fullChild->children.begin() + medianIdx + 1, fullChild->children.end());
+// ---------------------------------------------------------------- INSERT
+// Nut co m khoa: giu m/2 khoa dau, day khoa thu m/2 len cha, phan con lai sang nut moi.
+// Voi m = 5: [a b c d e] -> trai [a b], len c, phai [d e].
+BTree::Split BTree::splitNode(Node* node) {
+    std::size_t mid = static_cast<std::size_t>(m_ / 2);
+    Split s;
+    s.happened = true;
+    s.median = node->keys[mid];
+    s.right = new Node();
+    s.right->keys.assign(node->keys.begin() + mid + 1, node->keys.end());
+    node->keys.resize(mid);
+    if (!node->isLeaf()) {
+        s.right->children.assign(node->children.begin() + mid + 1, node->children.end());
+        node->children.resize(mid + 1);
     }
-
-    int medianKey = fullChild->keys[medianIdx];
-    fullChild->keys.erase(fullChild->keys.begin() + medianIdx, fullChild->keys.end());
-
-    // Chèn con mới vào parent
-    parent->children.insert(parent->children.begin() + i + 1, newNode);
-    // Đẩy khóa giữa lên parent
-    parent->keys.insert(parent->keys.begin() + i, medianKey);
+    return s;
 }
 
-// Hàm hỗ trợ chèn vào nút chưa đầy (Insert Non-Full)
-void BTree::insertNonFull(Node* node, int key) {
-    int i = node->keys.size() - 1;
-
+BTree::Split BTree::insertRec(Node* node, int key, bool& inserted) {
+    ++visited_;
+    std::size_t i = lowerIndex(node, key);
+    if (i < node->keys.size() && node->keys[i] == key) {   // khoa trung
+        inserted = false;
+        return Split();
+    }
     if (node->isLeaf()) {
-        // Tìm vị trí thích hợp và chèn key vào lá
-        node->keys.push_back(0);
-        while (i >= 0 && node->keys[i] > key) {
-            node->keys[i + 1] = node->keys[i];
-            i--;
-        }
-        node->keys[i + 1] = key;
+        node->keys.insert(node->keys.begin() + i, key);
+        inserted = true;
     } else {
-        // Tìm nút con để xuống
-        while (i >= 0 && node->keys[i] > key) {
-            i--;
+        Split child = insertRec(node->children[i], key, inserted);
+        if (child.happened) {                               // con bi tach: nhan khoa giua
+            node->keys.insert(node->keys.begin() + i, child.median);
+            node->children.insert(node->children.begin() + i + 1, child.right);
         }
-        i++;
-
-        // Nếu nút con bị tràn (chứa m-1 khóa), tách nút trước khi xuống
-        if (node->children[i]->keys.size() == m_ - 1) {
-            splitChild(node, i, node->children[i]);
-            if (node->keys[i] < key) {
-                i++;
-            }
-        }
-        insertNonFull(node->children[i], key);
     }
+    if (node->keys.size() == static_cast<std::size_t>(m_)) return splitNode(node);   // tran
+    return Split();
 }
 
-// 2. HAM CHEN (INSERT)
 bool BTree::insert(int key) {
-    // Nếu key đã tồn tại trong cây thì không chèn lại
-    if (search(key)) return false;
-
-    if (root_ == nullptr) {
-        root_ = new Node(true);
+    if (!root_) {
+        root_ = new Node();
         root_->keys.push_back(key);
         return true;
     }
-
-    // Nếu gốc bị tràn, tạo gốc mới và tách
-    if (root_->keys.size() == m_ - 1) {
-        Node* newRoot = new Node(false);
+    bool inserted = false;
+    Split s = insertRec(root_, key, inserted);
+    if (s.happened) {                                       // goc bi tach: cay cao them 1
+        Node* newRoot = new Node();
+        newRoot->keys.push_back(s.median);
         newRoot->children.push_back(root_);
-        splitChild(newRoot, 0, root_);
-
-        int i = 0;
-        if (newRoot->keys[0] < key) {
-            i++;
-        }
-        insertNonFull(newRoot->children[i], key);
+        newRoot->children.push_back(s.right);
         root_ = newRoot;
-    } else {
-        insertNonFull(root_, key);
     }
-    return true;
+    return inserted;
 }
 
-// 3. HAM XOA (REMOVE - OPTIONAL/DUMMY FOR WEEK 2)
-bool BTree::remove(int key) {
-    // Xóa khóa trên B-Tree (Optional bonus).
-    // Nếu chưa cài đặt chi tiết có thể để trả về false nếu không tìm thấy key
-    if (!search(key)) return false;
-    
-    // TODO: Triển khai Merge/Redistribution nếu làm phần thưởng điểm cộng (Bonus)
-    return false; 
+// ---------------------------------------------------------------- REMOVE
+// Gop con i+1 vao con i cung khoa phan cach parent->keys[i].
+void BTree::mergeChildren(Node* parent, std::size_t i) {
+    Node* left = parent->children[i];
+    Node* right = parent->children[i + 1];
+    left->keys.push_back(parent->keys[i]);
+    left->keys.insert(left->keys.end(), right->keys.begin(), right->keys.end());
+    left->children.insert(left->children.end(), right->children.begin(), right->children.end());
+    parent->keys.erase(parent->keys.begin() + i);
+    parent->children.erase(parent->children.begin() + i + 1);
+    right->children.clear();
+    delete right;
 }
 
-// Hàm hỗ trợ duyệt In-order
-void BTree::inOrderHelper(Node* node, std::vector<int>& result) const {
-    if (!node) return;
-    for (size_t i = 0; i < node->keys.size(); ++i) {
-        if (!node->isLeaf()) {
-            inOrderHelper(node->children[i], result);
+// Neu con i thieu khoa: muon trai -> muon phai -> gop.
+void BTree::fixChild(Node* parent, std::size_t i) {
+    Node* c = parent->children[i];
+    if (c->keys.size() >= minKeys()) return;
+
+    if (i > 0 && parent->children[i - 1]->keys.size() > minKeys()) {           // muon tu anh em trai
+        Node* left = parent->children[i - 1];
+        c->keys.insert(c->keys.begin(), parent->keys[i - 1]);
+        parent->keys[i - 1] = left->keys.back();
+        left->keys.pop_back();
+        if (!left->isLeaf()) {
+            c->children.insert(c->children.begin(), left->children.back());
+            left->children.pop_back();
         }
+    } else if (i + 1 < parent->children.size() && parent->children[i + 1]->keys.size() > minKeys()) {  // muon tu anh em phai
+        Node* right = parent->children[i + 1];
+        c->keys.push_back(parent->keys[i]);
+        parent->keys[i] = right->keys.front();
+        right->keys.erase(right->keys.begin());
+        if (!right->isLeaf()) {
+            c->children.push_back(right->children.front());
+            right->children.erase(right->children.begin());
+        }
+    } else if (i > 0) {
+        mergeChildren(parent, i - 1);                                            // gop voi anh em trai
+    } else {
+        mergeChildren(parent, i);                                                // gop voi anh em phai
+    }
+}
+
+bool BTree::removeRec(Node* node, int key) {
+    ++visited_;
+    std::size_t i = lowerIndex(node, key);
+    bool here = i < node->keys.size() && node->keys[i] == key;
+
+    if (here && node->isLeaf()) {
+        node->keys.erase(node->keys.begin() + i);
+        return true;
+    }
+    if (here) {                                   // khoa o nut trong: thay bang khoa lien truoc
+        const Node* p = node->children[i];
+        while (!p->isLeaf()) p = p->children.back();
+        int pred = p->keys.back();
+        node->keys[i] = pred;
+        removeRec(node->children[i], pred);
+        fixChild(node, i);
+        return true;
+    }
+    if (node->isLeaf()) return false;             // khong tim thay
+    bool removed = removeRec(node->children[i], key);
+    fixChild(node, i);
+    return removed;
+}
+
+bool BTree::remove(int key) {
+    if (!root_) return false;
+    bool removed = removeRec(root_, key);
+    if (root_->keys.empty()) {                    // goc het khoa
+        Node* old = root_;
+        root_ = old->isLeaf() ? nullptr : old->children[0];   // cay thap di 1 (hoac rong)
+        old->children.clear();
+        delete old;
+    }
+    return removed;
+}
+
+// ---------------------------------------------------------------- TRAVERSE, HEIGHT, LEVELS
+void BTree::inOrderHelper(const Node* node, std::vector<int>& result) const {
+    if (!node) return;
+    for (std::size_t i = 0; i < node->keys.size(); ++i) {
+        if (!node->isLeaf()) inOrderHelper(node->children[i], result);
         result.push_back(node->keys[i]);
     }
-    if (!node->isLeaf()) {
-        inOrderHelper(node->children.back(), result);
-    }
+    if (!node->isLeaf()) inOrderHelper(node->children.back(), result);
 }
 
-// 4. HAM DUYET CAY IN-ORDER (TRAVERSE)
 std::vector<int> BTree::traverse() const {
     std::vector<int> result;
     inOrderHelper(root_, result);
     return result;
 }
 
-// 5. HAM KIEM TRA TINH CHAT CAY (VALIDATE)
-bool BTree::validate(std::string* error) const {
-    if (!root_) return true; // Cây rỗng coi như hợp lệ
+int BTree::height() const {
+    if (!root_) return -1;
+    int h = 0;
+    for (const Node* n = root_; !n->isLeaf(); n = n->children[0]) ++h;
+    return h;
+}
 
-    // 1. Kiểm tra số lượng khóa của gốc
-    if (root_->keys.size() >= static_cast<size_t>(m_)) {
-        if (error) *error = "Root has too many keys";
-        return false;
-    }
-
-    // 2. Kiểm tra tính thứ tự tăng dần của các khóa thu được qua duyệt In-order
-    std::vector<int> keys = traverse();
-    for (size_t i = 1; i < keys.size(); ++i) {
-        if (keys[i] <= keys[i - 1]) {
-            if (error) *error = "Keys are not strictly sorted or contain duplicates";
-            return false;
+std::string BTree::levels() const {
+    if (!root_) return "";
+    std::string out;
+    std::vector<const Node*> level{root_};
+    while (!level.empty()) {
+        std::vector<const Node*> next;
+        for (std::size_t j = 0; j < level.size(); ++j) {
+            out += (j ? " [" : "[");
+            for (std::size_t k = 0; k < level[j]->keys.size(); ++k)
+                out += (k ? " " : "") + std::to_string(level[j]->keys[k]);
+            out += "]";
+            for (const Node* c : level[j]->children) next.push_back(c);
         }
+        if (!next.empty()) out += " | ";
+        level = next;
+    }
+    return out;
+}
+
+// ---------------------------------------------------------------- VALIDATE (5 tinh chat)
+bool BTree::validateRec(const Node* n, bool isRoot, const long long* lo, const long long* hi,
+                        int depth, int& leafDepth, std::string& why) const {
+    // (2) so khoa toi da / toi thieu
+    if (n->keys.size() > static_cast<std::size_t>(m_ - 1)) { why = "node has more than m-1 keys"; return false; }
+    if (isRoot ? n->keys.empty() : n->keys.size() < minKeys()) { why = "node has too few keys"; return false; }
+    for (std::size_t i = 0; i < n->keys.size(); ++i) {
+        // (1) tang dan trong nut, (5) nam dung khoang cua nut cha
+        if (i > 0 && n->keys[i] <= n->keys[i - 1]) { why = "keys in a node are not strictly increasing"; return false; }
+        if ((lo && n->keys[i] <= *lo) || (hi && n->keys[i] >= *hi)) { why = "key outside the range given by its parent"; return false; }
+    }
+    if (n->isLeaf()) {
+        // (4) moi la cung do sau
+        if (leafDepth < 0) leafDepth = depth;
+        else if (leafDepth != depth) { why = "leaves are not all at the same depth"; return false; }
+        return true;
+    }
+    // (3) k khoa thi k+1 con
+    if (n->children.size() != n->keys.size() + 1) { why = "internal node does not have keys+1 children"; return false; }
+    for (std::size_t i = 0; i < n->children.size(); ++i) {
+        long long a = i > 0 ? n->keys[i - 1] : 0, b = i < n->keys.size() ? n->keys[i] : 0;
+        const long long* L = i > 0 ? &a : lo;
+        const long long* H = i < n->keys.size() ? &b : hi;
+        if (!validateRec(n->children[i], false, L, H, depth + 1, leafDepth, why)) return false;
     }
     return true;
 }
 
-// 6. HAM TINH CHIEU CAO CAY (HEIGHT)
-int BTree::height() const {
-    if (!root_) return -1;
-    int h = 0;
-    for (const Node* n = root_; !n->isLeaf(); n = n->children[0]) {
-        ++h;
-    }
-    return h;
+bool BTree::validate(std::string* error) const {
+    if (!root_) return true;                      // cay rong hop le
+    int leafDepth = -1;
+    std::string why;
+    bool ok = validateRec(root_, true, nullptr, nullptr, 0, leafDepth, why);
+    if (!ok && error) *error = why;
+    return ok;
 }
