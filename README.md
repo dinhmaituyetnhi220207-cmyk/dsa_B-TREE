@@ -38,3 +38,16 @@ g++ -std=c++17 -Wall -Wextra -o btree src/btree.cpp src/main.cpp
 ## Sử dụng AI
 
 Dự án có sử dụng công cụ AI; toàn bộ được khai báo trong [docs/ai-log.md](docs/ai-log.md).
+
+## Tuần 2 – Cài đặt cốt lõi
+
+- Mã nguồn: [src/btree.h](src/btree.h), [src/btree.cpp](src/btree.cpp) – search, insert (tách khi tràn), remove (mượn/gộp), traverse, validate (đủ 5 tính chất), đếm số nút được thăm.
+- Unit test T1–T16 theo [kế hoạch Tuần 1](docs/week1/test-plan.md): [tests/test_btree.cpp](tests/test_btree.cpp) – 45/45 kiểm tra đạt.
+- Demo chạy lại ví dụ chạy tay Tuần 1: [src/main.cpp](src/main.cpp).
+
+```bash
+g++ -std=c++17 -Wall -Wextra -Isrc -o test_btree tests/test_btree.cpp src/btree.cpp
+./test_btree
+g++ -std=c++17 -Wall -Wextra -o btree src/main.cpp src/btree.cpp
+./btree
+```
