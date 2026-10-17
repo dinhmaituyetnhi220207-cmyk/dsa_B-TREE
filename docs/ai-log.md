@@ -11,3 +11,10 @@ Khai báo theo quy định môn học. Mỗi tuần một mục; phần chỉnh 
 
 
 
+
+## Tuần 2
+
+| # | Công cụ / model | Prompt (tóm tắt) | AI tạo ra | Sinh viên đã sửa / hoàn thiện | Minh chứng |
+
+
+**AI làm sai / thiếu đã phát hiện trong Tuần 2:** ✏️ ĐIỀN bằng lời của bạn. Gợi ý: bản code ban đầu tách nút sớm (cách của CLRS) nên với m lẻ tạo ra nút thiếu khóa; phát hiện bằng cách chạy test T4 và so với bản chạy tay Tuần 1, rồi kiểm tra đủ 5 tính chất thì thấy nút chỉ có 1 khóa.
