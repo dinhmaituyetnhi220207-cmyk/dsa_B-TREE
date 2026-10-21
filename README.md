@@ -51,3 +51,5 @@ g++ -std=c++17 -Wall -Wextra -Isrc -o test_btree tests/test_btree.cpp src/btree.
 g++ -std=c++17 -Wall -Wextra -o btree src/main.cpp src/btree.cpp
 ./btree
 ```
+- Báo cáo Tuần 2 (chứng minh độ phức tạp, chỗ AI làm sai, minh chứng commit): [docs/week2/report.md](docs/week2/report.md)
+- Kiểm tra áp lực 630.000 thao tác, m = 3…9: [tests/stress_btree.cpp](tests/stress_btree.cpp)
