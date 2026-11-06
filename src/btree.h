@@ -9,6 +9,17 @@
 
 class BTree {
 public:
+    // Thong ke cau truc cay (Tuan 3): dung cho thuc nghiem anh huong cua m.
+    struct Stats {
+        long nodes = 0;          // so nut
+        long leaves = 0;         // so la
+        long keys = 0;           // tong so khoa (= n)
+        long long heapBytes = 0; // bo nho RAM thuc dung: sizeof(Node) + capacity cua 2 vector
+        long long diskBytes = 0; // neu luu dia: moi nut 1 trang co dinh 4 + 4(m-1) + 8m byte
+        double fill = 0;         // ti le lap day = keys / (nodes * (m-1))
+    };
+    enum class NodeSearch { Binary, Linear };   // cach tim vi tri trong mot nut (thu cai tien Tuan 3)
+
     explicit BTree(int order = 5);   // order = m, yeu cau m >= 3
     ~BTree();
     BTree(const BTree&) = delete;
@@ -27,6 +38,14 @@ public:
     long nodesVisited() const { return visited_; }   // so nut da tham (mo phong doc dia)
     void resetVisited() const { visited_ = 0; }
 
+    // Tuan 3: dem so lan tach / gop / muon (moi lan tach hay gop = ghi them nut ra dia).
+    long splits() const { return splits_; }
+    long merges() const { return merges_; }
+    long borrows() const { return borrows_; }
+    void resetCounters() const { visited_ = 0; splits_ = merges_ = borrows_ = 0; }
+    Stats stats() const;
+    void setNodeSearch(NodeSearch s) { nodeSearch_ = s; }
+
 private:
     struct Node {
         std::vector<int>   keys;      // tang dan; toi da m-1 khoa (tam thoi m khi tran)
@@ -42,9 +61,12 @@ private:
     int   m_;
     Node* root_ = nullptr;
     mutable long visited_ = 0;
+    mutable long splits_ = 0, merges_ = 0, borrows_ = 0;
+    NodeSearch nodeSearch_ = NodeSearch::Binary;
 
     std::size_t minKeys() const { return static_cast<std::size_t>((m_ + 1) / 2 - 1); }  // ceil(m/2) - 1
-    static std::size_t lowerIndex(const Node* n, int key);
+    std::size_t lowerIndex(const Node* n, int key) const;
+    void statsRec(const Node* n, Stats& s) const;
 
     void  destroy(Node* node);
     Split insertRec(Node* node, int key, bool& inserted);

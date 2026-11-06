@@ -15,8 +15,14 @@ void BTree::destroy(Node* node) {
     delete node;
 }
 
-// Vi tri i dau tien co keys[i] >= key (tim nhi phan trong mot nut).
-std::size_t BTree::lowerIndex(const Node* n, int key) {
+// Vi tri i dau tien co keys[i] >= key.
+// Mac dinh tim nhi phan (lower_bound, O(log m)); Tuan 3 thu them duyet tuan tu (O(m)) de so sanh.
+std::size_t BTree::lowerIndex(const Node* n, int key) const {
+    if (nodeSearch_ == NodeSearch::Linear) {
+        std::size_t i = 0, k = n->keys.size();
+        while (i < k && n->keys[i] < key) ++i;
+        return i;
+    }
     return static_cast<std::size_t>(std::lower_bound(n->keys.begin(), n->keys.end(), key) - n->keys.begin());
 }
 
@@ -39,6 +45,7 @@ bool BTree::search(int key, std::vector<std::vector<int>>* path) const {
 // Voi m = 5: [a b c d e] -> trai [a b], len c, phai [d e].
 BTree::Split BTree::splitNode(Node* node) {
     std::size_t mid = static_cast<std::size_t>(m_ / 2);
+    ++splits_;
     Split s;
     s.happened = true;
     s.median = node->keys[mid];
@@ -96,6 +103,7 @@ bool BTree::insert(int key) {
 void BTree::mergeChildren(Node* parent, std::size_t i) {
     Node* left = parent->children[i];
     Node* right = parent->children[i + 1];
+    ++merges_;
     left->keys.push_back(parent->keys[i]);
     left->keys.insert(left->keys.end(), right->keys.begin(), right->keys.end());
     left->children.insert(left->children.end(), right->children.begin(), right->children.end());
@@ -112,6 +120,7 @@ void BTree::fixChild(Node* parent, std::size_t i) {
 
     if (i > 0 && parent->children[i - 1]->keys.size() > minKeys()) {           // muon tu anh em trai
         Node* left = parent->children[i - 1];
+        ++borrows_;
         c->keys.insert(c->keys.begin(), parent->keys[i - 1]);
         parent->keys[i - 1] = left->keys.back();
         left->keys.pop_back();
@@ -121,6 +130,7 @@ void BTree::fixChild(Node* parent, std::size_t i) {
         }
     } else if (i + 1 < parent->children.size() && parent->children[i + 1]->keys.size() > minKeys()) {  // muon tu anh em phai
         Node* right = parent->children[i + 1];
+        ++borrows_;
         c->keys.push_back(parent->keys[i]);
         parent->keys[i] = right->keys.front();
         right->keys.erase(right->keys.begin());
@@ -211,6 +221,25 @@ std::string BTree::levels() const {
         level = next;
     }
     return out;
+}
+
+// ---------------------------------------------------------------- STATS (Tuan 3)
+void BTree::statsRec(const Node* n, Stats& s) const {
+    ++s.nodes;
+    s.keys += static_cast<long>(n->keys.size());
+    s.heapBytes += static_cast<long long>(sizeof(Node) + n->keys.capacity() * sizeof(int) +
+                                          n->children.capacity() * sizeof(Node*));
+    if (n->isLeaf()) { ++s.leaves; return; }
+    for (const Node* c : n->children) statsRec(c, s);
+}
+
+BTree::Stats BTree::stats() const {
+    Stats s;
+    if (!root_) return s;
+    statsRec(root_, s);
+    s.diskBytes = s.nodes * (4LL + 4LL * (m_ - 1) + 8LL * m_);   // trang co dinh: dem + khoa + con tro
+    s.fill = static_cast<double>(s.keys) / (static_cast<double>(s.nodes) * (m_ - 1));
+    return s;
 }
 
 // ---------------------------------------------------------------- VALIDATE (5 tinh chat)
