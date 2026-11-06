@@ -175,7 +175,7 @@ Với đĩa thật, chi phí chính là **số lần truy cập** (thời gian t
 
 **Kết luận về m.** m nhỏ: cây cao, nhiều nút, tốn bộ nhớ cho con trỏ và chi phí nút, nhiều lần đọc đĩa. m lớn: cây thấp, ít lần đọc, nhưng mỗi nút tốn công dịch phần tử khi chèn/xóa và nếu vượt quá một khối đĩa thì lãng phí băng thông. Chọn **m sao cho một nút vừa một khối đĩa** (m ≈ 341 với khối 4 KB, khóa `int`, con trỏ 8 byte). m = 5 của đề tài là để chạy tay và kiểm thử, không phải giá trị dùng thật.
 
-## 8. Những điều bất ngờ và giải thích
+## 8.  Giải thích
 
 **8.1. Dữ liệu tăng dần làm cây cao hơn nhưng chèn lại nhanh hơn (tới 6–8 lần khi n = 10<sup>6</sup>).** Ví dụ n = 10<sup>6</sup>, m = 5: asc chèn 135 ns/khóa, random 807 ns/khóa, dù cây asc cao hơn (11 so với 10). Chênh lệch tăng theo n (1,3–4,5 lần ở n = 10<sup>3</sup>, 6–8 lần ở n = 10<sup>6</sup>), đúng như dự đoán nếu nguyên nhân là cache. Lý do: khóa tăng dần luôn đi theo cùng một đường bên phải, nên các nút trên đường đó luôn nằm sẵn trong cache CPU; khóa ngẫu nhiên mỗi lần đi một đường khác, gần như mọi nút đều trượt cache. Nếu là đĩa thật, điều tương tự xảy ra với bộ đệm trang của hệ điều hành. Vì vậy cơ sở dữ liệu thường chèn khóa tăng dần (ví dụ khóa tự tăng).
 
