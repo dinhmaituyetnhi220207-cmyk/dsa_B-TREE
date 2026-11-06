@@ -14,8 +14,13 @@ Cài đặt B-Tree bậc m (mặc định m = 5) với các thao tác tìm kiế
 ## Cấu trúc thư mục
 
 ```
-src/            mã nguồn C++ (btree.h, btree.cpp, main.cpp)
+src/            mã nguồn C++ (btree.h, btree.cpp, main.cpp; bst.h, bst.cpp để so sánh)
+tests/          unit test T1–T16, kiểm tra áp lực, trường hợp biên E1–E14
+bench/          bộ thực nghiệm Tuần 3 (bench.cpp) và script vẽ hình (plot.py)
+results/        kết quả thực nghiệm dạng CSV
 docs/week1/     báo cáo Tuần 1, kế hoạch kiểm thử, hình minh họa
+docs/week2/     báo cáo Tuần 2
+docs/week3/     báo cáo Tuần 3 và hình kết quả
 docs/ai-log.md  nhật ký sử dụng AI (cộng dồn các tuần)
 ```
 
@@ -31,8 +36,8 @@ g++ -std=c++17 -Wall -Wextra -o btree src/btree.cpp src/main.cpp
 | Tuần | Nội dung | Tài liệu |
 |:---:|---|---|
 | 1 | Hiểu đề, chọn cấu trúc dữ liệu, chạy tay, kế hoạch kiểm thử, khung mã C++ | [Báo cáo](docs/week1/report.md) · [Kế hoạch kiểm thử](docs/week1/test-plan.md) |
-| 2 | Cài đặt các thao tác, unit test, chứng minh độ phức tạp | – |
-| 3 | Thực nghiệm hiệu năng, so sánh lý thuyết, thử cải tiến | – |
+| 2 | Cài đặt các thao tác, unit test, chứng minh độ phức tạp | [Báo cáo](docs/week2/report.md) |
+| 3 | Thực nghiệm hiệu năng, so sánh lý thuyết và BST, ảnh hưởng của m, thử cải tiến, trường hợp biên | [Báo cáo](docs/week3/report.md) |
 | 4 | Hoàn thiện, chuẩn bị vấn đáp | – |
 
 ## Sử dụng AI
@@ -53,3 +58,16 @@ g++ -std=c++17 -Wall -Wextra -o btree src/main.cpp src/btree.cpp
 ```
 - Báo cáo Tuần 2 (chứng minh độ phức tạp, chỗ AI làm sai, minh chứng commit): [docs/week2/report.md](docs/week2/report.md)
 - Kiểm tra áp lực 630.000 thao tác, m = 3…9: [tests/stress_btree.cpp](tests/stress_btree.cpp)
+
+## Tuần 3 – Thực nghiệm và phân tích
+
+- Báo cáo: [docs/week3/report.md](docs/week3/report.md) – chiều cao và số lần đọc đĩa với n = 10⁵, 10⁶ và m = 3, 5, 16, 64, 256; so sánh BST; ảnh hưởng của m; thử cải tiến (bị loại, có số liệu); trường hợp biên E1–E14.
+- Bộ thực nghiệm: [bench/bench.cpp](bench/bench.cpp), vẽ hình: [bench/plot.py](bench/plot.py), số liệu: [results/](results).
+
+```bash
+g++ -std=c++17 -O2 -DNDEBUG -Isrc -o bench_btree bench/bench.cpp src/btree.cpp src/bst.cpp
+./bench_btree all            # khoảng 15 phút trên máy 1 nhân; ./bench_btree all --quick để chạy nhanh
+python3 bench/plot.py        # cần pandas, matplotlib
+g++ -std=c++17 -O2 -Wall -Wextra -Isrc -o edge_cases tests/edge_cases.cpp src/btree.cpp src/bst.cpp
+./edge_cases
+```

@@ -5,6 +5,10 @@ build/
 *.exe
 btree
 a.out
+bench_btree
+edge_cases
+test_btree
+stress_btree
 # editor
 .vscode/
 .idea/
