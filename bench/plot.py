@@ -1,21 +1,25 @@
 # plot.py - ve hinh cho bao cao Tuan 3 tu cac file CSV trong results/.
-# Chay (sau ./bench_btree all):  python3 bench/plot.py   -> docs/week3/images/*.png
+# Chay (sau ./bench_btree all):  python3 bench/plot.py           -> docs/week3/images/*.png
+#      (sau ./bench_btree all --quick): python3 bench/plot.py --quick -> results/quick/images/*.png
 import math
 import os
+import sys
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-OUT = "docs/week3/images"
+QUICK = "--quick" in sys.argv
+RES = "results/quick" if QUICK else "results"
+OUT = "results/quick/images" if QUICK else "docs/week3/images"
 os.makedirs(OUT, exist_ok=True)
 plt.rcParams.update({"figure.dpi": 130, "font.size": 9, "axes.grid": True, "grid.alpha": 0.3})
 
-H = pd.read_csv("results/height_reads.csv")
-B = pd.read_csv("results/btree_vs_bst.csv")
-O = pd.read_csv("results/opt_linear_vs_binary.csv")
-S = pd.read_csv("results/m_sweep.csv")
+H = pd.read_csv(f"{RES}/height_reads.csv")
+B = pd.read_csv(f"{RES}/btree_vs_bst.csv")
+O = pd.read_csv(f"{RES}/opt_linear_vs_binary.csv")
+S = pd.read_csv(f"{RES}/m_sweep.csv")
 ORD = ["random", "asc", "desc", "zigzag"]
 
 # ---- Hinh 1: chieu cao thuc te vs can ly thuyet theo n, cho tung m
@@ -31,18 +35,19 @@ axes[0].set_ylabel("chiều cao h"); axes[0].legend(fontsize=7)
 fig.suptitle("Hình 1. Chiều cao đo được nằm trong cận lý thuyết; dữ liệu tăng dần chạm cận trên")
 fig.tight_layout(); fig.savefig(f"{OUT}/fig1_height_vs_bounds.png"); plt.close(fig)
 
-# ---- Hinh 2: so lan doc dia moi lan tim (n = 10^6), theo m va kieu du lieu
-d = H[H.n == 1_000_000]
+# ---- Hinh 2: so lan doc dia moi lan tim (n lon nhat da do), theo m va kieu du lieu
+NMAX = int(H.n.max())
+d = H[H.n == NMAX]
 fig, ax = plt.subplots(figsize=(6.5, 3.4))
 w = 0.2
 ms = [3, 5, 16, 64, 256]
 for i, o in enumerate(ORD):
     vals = [d[(d.m == m) & (d.order == o)].reads_hit.iloc[0] for m in ms]
     ax.bar([j + (i - 1.5) * w for j in range(len(ms))], vals, w, label=o)
-ax.plot(range(len(ms)), [math.log(1_000_001, m) for m in ms], "k^:", label="log_m(n+1)")
+ax.plot(range(len(ms)), [math.log(NMAX + 1, m) for m in ms], "k^:", label="log_m(n+1)")
 ax.set_xticks(range(len(ms))); ax.set_xticklabels([f"m={m}" for m in ms])
 ax.set_ylabel("số nút thăm / lần tìm (= số lần đọc đĩa)")
-ax.set_title("Hình 2. Số lần đọc đĩa khi tìm, n = 1.000.000"); ax.legend(fontsize=7)
+ax.set_title(f"Hình 2. Số lần đọc đĩa khi tìm, n = {NMAX:,}".replace(",", ".")); ax.legend(fontsize=7)
 fig.tight_layout(); fig.savefig(f"{OUT}/fig2_reads_per_search.png"); plt.close(fig)
 
 # ---- Hinh 3: anh huong cua m (quet m, n = 10^6 ngau nhien)

@@ -1,6 +1,6 @@
 // bench.cpp - bo thuc nghiem Tuan 3 (benchmark harness).
 // Bien dich: g++ -std=c++17 -O2 -DNDEBUG -Isrc -o bench_btree bench/bench.cpp src/btree.cpp src/bst.cpp
-// Chay:      ./bench_btree [all|height|bst|opt|msweep] [--quick]     -> ghi CSV vao results/
+// Chay:      ./bench_btree [all|height|bst|opt|msweep] [--quick]     -> ghi CSV vao results/ (--quick: results/quick/)
 //
 // Mo hinh "doc dia": moi nut duoc tham = 1 lan doc mot trang dia (nodesVisited()).
 // Khoa duoc dung: so chan 0, 2, 4, ..., 2(n-1)  -> tim khoa le de do tim KHONG thanh cong.
@@ -23,7 +23,8 @@ using Clock = std::chrono::steady_clock;
 static double msSince(Clock::time_point t0) {
     return std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
 }
-static volatile long g_sink = 0;   // chong trinh bien dich bo vong lap do
+static volatile long g_sink = 0;
+static std::string g_out = "results";   // --quick ghi vao results/quick de khong de len so lieu chinh thuc   // chong trinh bien dich bo vong lap do
 
 // ------------------------------------------------------------------ du lieu dau vao
 enum class Order { Random, Asc, Desc, ZigZag };
@@ -65,7 +66,7 @@ static double median(std::vector<double> v) { std::sort(v.begin(), v.end()); ret
 // Chen n khoa (n >= 100.000 theo yeu cau), do chieu cao, so lan doc dia, bo nho, thoi gian
 // voi m = 3, 5, 16, 64, 256 va 4 kieu du lieu. Moi cau hinh lap RUNS lan (seed khac nhau).
 static void expHeight(bool quick) {
-    std::ofstream f("results/height_reads.csv");
+    std::ofstream f(g_out + "/height_reads.csv");
     f << "n,m,order,h,h_obs_lo,h_obs_hi,h_min,h_max,nodes,fill,heap_MB,disk_MB,splits_per_insert,"
          "reads_per_insert,reads_hit,reads_hit_max,reads_miss,reads_per_remove,merges,borrows,"
          "ns_insert,ns_search,ns_remove,valid\n";
@@ -149,7 +150,7 @@ static void runSame(Tree& t, const std::vector<int>& keys, const std::vector<int
     g_sink += found;
 }
 static void expBst(bool quick) {
-    std::ofstream f("results/btree_vs_bst.csv");
+    std::ofstream f(g_out + "/btree_vs_bst.csv");
     f << "n,order,structure,height_after_insert,heap_MB_after_insert,ms_insert,reads_per_insert,ms_search,reads_hit,reads_miss,ms_remove,reads_per_remove,valid\n";
     const long Q = 10000;
     auto row = [&](long n, Order o, const std::string& s, int h, double mb, const double r[7], bool ok) {
@@ -191,7 +192,7 @@ static void expBst(bool quick) {
 // Tim nhi phan (lower_bound) vs duyet tuan tu trong moi nut. So nut tham PHAI giong nhau;
 // chi thoi gian CPU khac. n = 10^6 khoa ngau nhien, 10^6 lan tim.
 static void expOpt(bool quick) {
-    std::ofstream f("results/opt_linear_vs_binary.csv");
+    std::ofstream f(g_out + "/opt_linear_vs_binary.csv");
     f << "m,mode,ns_search,ns_insert,reads_hit,same_tree\n";
     const long n = quick ? 200000 : 1000000;
     const int RUNS = quick ? 3 : 7;
@@ -225,7 +226,7 @@ static void expOpt(bool quick) {
 // Anh huong cua m (quet day): n = 10^6 ngau nhien. Bo nho RAM, bo nho neu luu dia,
 // so trang doc moi lan tim, so BYTE doc moi lan tim (= so trang * kich thuoc trang).
 static void expMSweep(bool quick) {
-    std::ofstream f("results/m_sweep.csv");
+    std::ofstream f(g_out + "/m_sweep.csv");
     f << "m,h,h_min,h_max,nodes,fill,heap_MB,page_bytes,disk_MB,reads_hit,bytes_per_search,ns_search\n";
     const long n = quick ? 200000 : 1000000;
     auto keys = makeKeys(n, Order::Random, 77);
@@ -250,7 +251,8 @@ static void expMSweep(bool quick) {
 int main(int argc, char** argv) {
     std::string what = argc > 1 ? argv[1] : "all";
     bool quick = argc > 2 && std::string(argv[2]) == "--quick";
-    std::filesystem::create_directories("results");
+    if (quick) g_out = "results/quick";
+    std::filesystem::create_directories(g_out);
     if (what == "all" || what == "height") expHeight(quick);
     if (what == "all" || what == "bst")    expBst(quick);
     if (what == "all" || what == "opt")    expOpt(quick);

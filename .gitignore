@@ -12,3 +12,6 @@ stress_btree
 # editor
 .vscode/
 .idea/
+
+# ket qua chay nhanh (--quick)
+results/quick/
